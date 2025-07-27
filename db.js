@@ -6,8 +6,7 @@ db.exec(`
   CREATE TABLE IF NOT EXISTS users (
     username TEXT PRIMARY KEY,
     full_name TEXT,
-    is_private INTEGER,
-    is_verified INTEGER
+    is_private BOOLEAN
   );
 
   CREATE TABLE IF NOT EXISTS connections (
@@ -25,10 +24,10 @@ db.exec(`
 
 function insertUser(user) {
   const stmt = db.prepare(`
-    INSERT OR IGNORE INTO users (username, full_name, is_private, is_verified)
-    VALUES (?, ?, ?, ?)
+    INSERT OR IGNORE INTO users (username, full_name, is_private)
+    VALUES (?, ?, ?)
   `);
-  stmt.run(user.username, user.full_name, user.is_private ? 1 : 0, user.is_verified ? 1 : 0);
+  stmt.run(user.username, user.full_name, user.is_private);
 }
 
 function insertConnection(source, target) {

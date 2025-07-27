@@ -1,8 +1,10 @@
 const ig = require('./ig');
 const db = require('./db');
 const { exportToGEXF } = require('./export-gexf');
+const { handleSoftBan } = require('./rate-limiter');
 
-const WAIT_TIME_MS = 30 * 1000;
+
+const WAIT_TIME_MS = 45 * 1000;
 
 function wait(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
@@ -18,7 +20,7 @@ async function crawlNetwork(startUsername, maxDepth = 2) {
   while (queue.length > 0) {
     const { username, depth } = queue.shift();
 
-    if (visited.has(username) || db.isProcessed(username))) {
+    if (visited.has(username) || db.isProcessed(username)) {
       console.log(`Already processed ${username}, skipping.`);
       continue;
     }
@@ -34,8 +36,7 @@ async function crawlNetwork(startUsername, maxDepth = 2) {
         db.insertUser({
           username: userInfo.username,
           full_name: userInfo.full_name,
-          is_private: userInfo.is_private,
-          is_verified: userInfo.is_verified
+          is_private: userInfo.is_private
         });
       }
 
@@ -44,8 +45,7 @@ async function crawlNetwork(startUsername, maxDepth = 2) {
           db.insertUser({
             username: mutual.username,
             full_name: mutual.full_name,
-            is_private: mutual.is_private,
-            is_verified: mutual.is_verified
+            is_private: mutual.is_private
           });
         }
         db.insertConnection(username, mutual.username);
@@ -60,13 +60,19 @@ async function crawlNetwork(startUsername, maxDepth = 2) {
       db.markProcessed(username);
       visited.add(username);
 
-      console.log(`✅ Processed ${username} - ${mutuals.length} mutuals (processed ${visited.size})`);
+      console.log(`✅ Processed ${username} - ${mutuals.length} mutuals (processed ${visited.size}/${queue.length + visited.size})`);
 
       console.log(`⏳ Waiting ${WAIT_TIME_MS / 1000}s before next user...`);
       await wait(WAIT_TIME_MS);
 
     } catch (e) {
-      console.warn(`⚠️ Failed to process ${username}:`, e.message);
+      const paused = await handleSoftBan(e);
+      if (paused) {
+        console.log(`🔁 Re-adding ${username} to the queue after soft ban.`);
+        queue.push({ username, depth });
+        continue;
+      } 
+      else throw e; // rethrow if it wasn't a soft ban
     }
   }
 

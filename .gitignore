@@ -140,3 +140,6 @@ vite.config.ts.timestamp-*
 
 insta_network.db
 
+/cache
+network.gexf
+session.json
