@@ -13,6 +13,12 @@ const mutualsCache = new Map();
 // Ensure a minimum delay between all Instagram API calls
 
 
+const WAIT_TIME_MS = 3 * 1000;
+
+function wait(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
 async function saveSession() {
   const state = await ig.state.serialize();
   await fs.writeJSON(SESSION_PATH, state);
@@ -97,6 +103,7 @@ async function getMutualFriends(userId) {
   do {
     const items = await followersFeed.items();
     followers.push(...items);
+    await wait(WAIT_TIME_MS);
   } while (followersFeed.isMoreAvailable());
 
   const followingFeed = ig.feed.accountFollowing(userId);
@@ -104,6 +111,7 @@ async function getMutualFriends(userId) {
   do {
     const items = await followingFeed.items();
     following.push(...items);
+    await wait(WAIT_TIME_MS);
   } while (followingFeed.isMoreAvailable());
 
   const followingUsernames = new Set(following.map(u => u.username));
