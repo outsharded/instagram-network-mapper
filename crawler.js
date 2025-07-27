@@ -18,7 +18,7 @@ async function crawlNetwork(startUsername, maxDepth = 2) {
   while (queue.length > 0) {
     const { username, depth } = queue.shift();
 
-    if (visited.has(username) || (db.isProcessed(username) && !db.isUserPrivate(username))) {
+    if (visited.has(username) || db.isProcessed(username))) {
       console.log(`Already processed ${username}, skipping.`);
       continue;
     }
