@@ -16,4 +16,10 @@ npm run map
 
 Login as prompted and allow the scraper to run.
 
+## Note on running
+The scraper runs two mutuals deep, ie:
+You > Your Freinds > Their Freinds
+
+This may lead to thousands of accounts being scanned, and this may take a long time. The program is designed to be started and stopped without losing data as everything is constantly saved in a database.
+
 Once the gexf is output, find and open it with Gephi. I suggest using ForceAtlas 2, and filtering the Topology>Degree>2+, to map connections, rather than end nodes.
