@@ -34,6 +34,7 @@ async function loadSession() {
 async function login(username, password, prompt) {
     ig.state.generateDevice(username);
   
+  await ig.simulate.preLoginFlow();
     try {
       await ig.account.login(username, password);
       console.log('✅ Logged in without 2FA');
@@ -56,6 +57,7 @@ async function login(username, password, prompt) {
   
         console.log('✅ Logged in with 2FA');
         await fs.writeJSON(SESSION_PATH, await ig.state.serialize());
+        await ig.simulate.postLoginFlow();
       } else {
         throw err;
       }
