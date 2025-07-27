@@ -14,9 +14,10 @@ function prompt(question) {
 
 async function main() {
   const hasSession = await fs.pathExists('./session.json');
+  
+    const username = await prompt('Instagram username: ');
 
   if (!hasSession) {
-    const username = await prompt('Instagram username: ');
     const password = await prompt('Instagram password: ');
 
     try {
@@ -34,7 +35,7 @@ async function main() {
   rl.close();
 
   try {
-    await crawlNetwork(startUsername.trim());
+    await crawlNetwork(startUsername.trim(), username);
   } catch (err) {
     console.error('❌ Crawler error:', err.stack);
   }

@@ -6,7 +6,7 @@ db.exec(`
   CREATE TABLE IF NOT EXISTS users (
     username TEXT PRIMARY KEY,
     full_name TEXT,
-    is_private BOOLEAN
+    is_private INTEGER
   );
 
   CREATE TABLE IF NOT EXISTS connections (
@@ -27,7 +27,7 @@ function insertUser(user) {
     INSERT OR IGNORE INTO users (username, full_name, is_private)
     VALUES (?, ?, ?)
   `);
-  stmt.run(user.username, user.full_name, user.is_private);
+  stmt.run(user.username, user.full_name, user.is_private ? 1 : 0);
 }
 
 function insertConnection(source, target) {

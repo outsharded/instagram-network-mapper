@@ -4,7 +4,8 @@ function isSoftBanError(error) {
       msg.includes('Please wait a few minutes') ||
       msg.includes('Too many requests') ||
       error.response?.statusCode === 401 ||
-      error.response?.statusCode === 403
+      error.response?.statusCode === 403 ||
+      error.response?.statusCode === 400
     );
   }
   
@@ -15,6 +16,7 @@ function isSoftBanError(error) {
       softBanCount++;
       const waitMs = Math.min(softBanCount * 5 * 60 * 1000, 30 * 60 * 1000); // max 30 min
       console.warn(`⚠️ Soft ban #${softBanCount}. Pausing for ${waitMs / 1000 / 60} minutes...`);
+      console.warn(error.message);
       await new Promise(resolve => setTimeout(resolve, waitMs));
       return true;
     }

@@ -11,17 +11,39 @@ function wait(ms) {
 }
 
 
-async function crawlNetwork(startUsername, maxDepth = 2) {
+async function crawlNetwork(startUsername, botUsername, maxDepth = 2) {
   const igClient = await ig.loginFromSession();
+
+  const botUserId = await ig.getUserId(botUsername);
+  const avail = await ig.getMutualFriends(botUserId);
+
+  const available = new Set();
+  for (const user of avail) {
+      available.add(user.username)
+  }
+
 
   const queue = [{ username: startUsername, depth: 0 }];
   const visited = new Set();
+
+  const allUsers = db.getAllUsers(); // You need to implement this in `db.js`
+  for (const user of allUsers) {
+    if (!db.isProcessed(user.username)) {
+      console.log(`📥 Queuing unprocessed cached user: ${user.username}`);
+      queue.push({ username: user.username, depth: 1 }); // depth 1 to treat as friends-of-start
+    }
+  }
 
   while (queue.length > 0) {
     const { username, depth } = queue.shift();
 
     if (visited.has(username) || db.isProcessed(username)) {
       console.log(`Already processed ${username}, skipping.`);
+      continue;
+    }
+
+    if (db.isUserPrivate(username) && !available.has(username)) {
+      console.log(`${username} is not accessable, skipping.`);
       continue;
     }
 
