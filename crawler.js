@@ -4,7 +4,7 @@ const { exportToGEXF } = require('./export-gexf');
 const { handleSoftBan } = require('./rate-limiter');
 
 
-const WAIT_TIME_MS = 45 * 1000;
+const WAIT_TIME_MS = 5 * 60 * 1000;
 
 function wait(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
@@ -83,9 +83,9 @@ async function crawlNetwork(startUsername, botUsername, maxDepth = 2) {
       visited.add(username);
 
       console.log(`✅ Processed ${username} - ${mutuals.length} mutuals (processed ${visited.size}/${queue.length + visited.size})`);
-
-      console.log(`⏳ Waiting ${WAIT_TIME_MS / 1000}s before next user...`);
-      await wait(WAIT_TIME_MS);
+      let multiplier = Math.random();
+      console.log(`⏳ Waiting ${(WAIT_TIME_MS * multiplier / 1000) + 30}s before next user...`);
+      await wait((WAIT_TIME_MS * multiplier) + 30000);
 
     } catch (e) {
       const paused = await handleSoftBan(e);
