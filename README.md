@@ -2,7 +2,7 @@
 Project to create a network map of freinds on Instagram.
 
 ## WARNING
-Using automation on your account is against Instagram ToS. The code does attempt to deal with and prevent soft bans and rate limits, but be cautious.
+Using automation on your account is against Instagram ToS. The code does attempt to deal with and prevent soft bans and rate limits, but be cautious. I very strongly advise making a new account to do scanning with.
 
 ## Installation
 You need:
