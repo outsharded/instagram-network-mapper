@@ -9,23 +9,9 @@ const ig = new IgApiClient();
 const userIdCache = new Map();
 const mutualsCache = new Map();
 
-// Wait time between API calls (3–5 sec randomized)
-const BASE_WAIT = 3000;
-function wait(ms = BASE_WAIT) {
-  return new Promise(resolve => setTimeout(resolve, ms + Math.floor(Math.random() * 2000)));
-}
 
-async function maybeSimulateWhileCrawling(probability = 0.1) {
-  if (Math.random() < probability) {
-    console.log('👤 Simulating user activity...');
-    try {
-      await ig.qe.syncLoginExperiments();
-      await wait();
-    } catch (e) {
-      console.warn('⚠️ Simulation during crawl failed:', e.message);
-    }
-  }
-}
+// Ensure a minimum delay between all Instagram API calls
+
 
 async function saveSession() {
   const state = await ig.state.serialize();
@@ -39,68 +25,47 @@ async function loadSession() {
   return true;
 }
 
-async function simulateHumanBehavior() {
-  try {
-    // Sync app settings, analytics etc.
-    await ig.qe.syncLoginExperiments(); 
-    await wait();
-
-    // Simulate checking inbox
-
-    // Simulate viewing a story (optional, random pk)
-    await ig.publish.storySeen([{ mediaId: '2929292929292929292_1234567890', takenAt: Math.floor(Date.now() / 1000) }])
-      .catch(() => {}); // ignore if invalid
-    await wait();
-
-  } catch (e) {
-    console.warn('⚠️ Simulation skipped due to:', e.message);
-  }
-}
-
 async function login(username, password, prompt) {
-  ig.state.generateDevice(username);
-  await ig.simulate.preLoginFlow();
-
-  try {
-    await ig.account.login(username, password);
-    console.log('✅ Logged in without 2FA');
-    await saveSession();
-    //await ig.simulate.postLoginFlow();
-  } catch (err) {
-    if (err.name === 'IgLoginTwoFactorRequiredError') {
-      console.log('🔐 2FA required');
-      const { two_factor_identifier, totp_two_factor_on } = err.response.body.two_factor_info;
-      const verificationMethod = totp_two_factor_on ? '0' : '1';
-
-      const code = await prompt('Enter 2FA code: ');
-
-      await ig.account.twoFactorLogin({
-        username,
-        verificationCode: code,
-        twoFactorIdentifier: two_factor_identifier,
-        verificationMethod,
-        trustThisDevice: true
-      });
-
-      console.log('✅ Logged in with 2FA');
-      await saveSession();
-      await ig.simulate.postLoginFlow();
-
-    } else {
-      throw err;
+    ig.state.generateDevice(username);
+  
+    try {
+      await ig.account.login(username, password);
+      console.log('✅ Logged in without 2FA');
+      await fs.writeJSON(SESSION_PATH, await ig.state.serialize());
+    } catch (err) {
+      if (err.name === 'IgLoginTwoFactorRequiredError') {
+        console.log('🔐 2FA required');
+        const { two_factor_identifier, totp_two_factor_on } = err.response.body.two_factor_info;
+        const verificationMethod = totp_two_factor_on ? '0' : '1';
+  
+        const code = await prompt('Enter 2FA code: ');
+  
+        await ig.account.twoFactorLogin({
+          username,
+          verificationCode: code,
+          twoFactorIdentifier: two_factor_identifier,
+          verificationMethod,
+          trustThisDevice: true
+        });
+  
+        console.log('✅ Logged in with 2FA');
+        await fs.writeJSON(SESSION_PATH, await ig.state.serialize());
+      } else {
+        throw err;
+      }
     }
   }
-}
 
 async function loginFromSession() {
-  if (!(await fs.pathExists(SESSION_PATH))) {
-    throw new Error('No session found. Please log in first.');
+    if (!(await fs.pathExists(SESSION_PATH))) {
+      throw new Error('No session found. Please log in first.');
+    }
+  
+    const saved = await fs.readJSON(SESSION_PATH);
+    await ig.state.deserialize(saved);
+    return ig;
   }
-
-  const saved = await fs.readJSON(SESSION_PATH);
-  await ig.state.deserialize(saved);
-  return ig;
-}
+  
 
 async function getUserId(username) {
   if (userIdCache.has(username)) {
@@ -152,6 +117,7 @@ async function getMutualFriends(userId) {
 }
 
 async function getUsernameById(userId) {
+  // This lookup is not cached to disk but could be added
   const userInfo = await ig.user.info(userId);
   return userInfo.username;
 }
