@@ -19,8 +19,6 @@ async function maybeSimulateWhileCrawling(probability = 0.1) {
   if (Math.random() < probability) {
     console.log('👤 Simulating user activity...');
     try {
-      await ig.direct.getInbox();
-      await wait();
       await ig.qe.syncLoginExperiments();
       await wait();
     } catch (e) {
@@ -48,17 +46,12 @@ async function simulateHumanBehavior() {
     await wait();
 
     // Simulate checking inbox
-    await ig.direct.getInbox();
-    await wait();
 
     // Simulate viewing a story (optional, random pk)
     await ig.publish.storySeen([{ mediaId: '2929292929292929292_1234567890', takenAt: Math.floor(Date.now() / 1000) }])
       .catch(() => {}); // ignore if invalid
     await wait();
 
-    // Update presence (optional, can be skipped)
-    await ig.fbsearch.topsearch('test');
-    await wait();
   } catch (e) {
     console.warn('⚠️ Simulation skipped due to:', e.message);
   }
@@ -71,9 +64,8 @@ async function login(username, password, prompt) {
   try {
     await ig.account.login(username, password);
     console.log('✅ Logged in without 2FA');
-    await ig.simulate.postLoginFlow();
-    await simulateHumanBehavior();
     await saveSession();
+    //await ig.simulate.postLoginFlow();
   } catch (err) {
     if (err.name === 'IgLoginTwoFactorRequiredError') {
       console.log('🔐 2FA required');
@@ -91,9 +83,9 @@ async function login(username, password, prompt) {
       });
 
       console.log('✅ Logged in with 2FA');
-      await ig.simulate.postLoginFlow();
-      await simulateHumanBehavior();
       await saveSession();
+      await ig.simulate.postLoginFlow();
+
     } else {
       throw err;
     }
@@ -140,8 +132,6 @@ async function getMutualFriends(userId) {
   do {
     const items = await followersFeed.items();
     followers.push(...items);
-    await wait();
-    await maybeSimulateWhileCrawling(0.1); // ~10% chance
   } while (followersFeed.isMoreAvailable());
 
   const followingFeed = ig.feed.accountFollowing(userId);
@@ -149,8 +139,6 @@ async function getMutualFriends(userId) {
   do {
     const items = await followingFeed.items();
     following.push(...items);
-    await wait();
-    await maybeSimulateWhileCrawling(0.1); // ~10% chance
   } while (followingFeed.isMoreAvailable());
 
   const followingUsernames = new Set(following.map(u => u.username));
